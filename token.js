@@ -15,22 +15,20 @@ const readline = require("readline").createInterface({
 readline.question(
   "После разрешения доступа произойдет перенаправление на страницу с токеном, токен хранится в адресной строке, скопируйте ссылку из адресной строки и вставьте сюда: ",
   (url) => {
-    while (true) {
-      if (url.split("#")[1]) {
-        let token = url.split("#")[1];
-        token = token.split("&");
-        token = token.find((part) => part.includes("token"));
-        token = token.split("=")[1];
-        console.clear();
-        console.log("Токен успешно сохранен");
+    if (url.split("#")[1]) {
+      let token = url.split("#")[1];
+      token = token.split("&");
+      token = token.find((part) => part.includes("token"));
+      token = token.split("=")[1];
+      console.clear();
+      console.log("Токен успешно сохранен");
 
-        fs.writeFileSync("token.json", JSON.stringify({ token }));
+      fs.writeFileSync("token.json", JSON.stringify({ token }));
 
-        readline.close();
-      } else {
-        console.log("Неверный формат токена");
-        break;
-      }
+      readline.close();
+    } else {
+      console.log("Неверный формат токена");
+      readline.close();
     }
   }
 );

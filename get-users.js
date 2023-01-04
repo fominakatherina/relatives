@@ -13,10 +13,16 @@ async function getMembers(groupId, offset = 0) {
   const token = JSON.parse(fs.readFileSync("token.json")).token;
 
   const vk = new VK(token);
-  let membersBunch = await vk.getMembers(groupId, 0);
+  let membersBunch;
+  try {
+    membersBunch = await vk.getMembers(groupId, 0);
+  } catch (e) {
+    console.log(`Неизвестная ошибка, проверьте интернет соединение`);
+    return;
+  }
 
   if (membersBunch.error) {
-    console.log("Неверный токен, обновите токен");
+    console.log("Неверный токен, обновите токен командой node token");
     return;
   }
 
@@ -33,22 +39,31 @@ async function getMembers(groupId, offset = 0) {
   console.log(`Начало загрузки с отступом ${offset}`);
 
   while (membersBunch.response.items.length != 0) {
-    membersBunch = await vk.getMembers(groupId, currentOffset);
+    try {
+      membersBunch = await vk.getMembers(groupId, currentOffset);
 
-    if (membersBunch.error) {
-      console.log("Ошибка загрузки, повтор попытки");
-      continue;
+      if (membersBunch.error) {
+        console.log(
+          `Ошибка загрузки, для продолжения загрузки пропишите коману: node get-users ${groupId} ${currentOffset}`
+        );
+        return;
+      }
+
+      membersBunch.response.items.forEach((member) => {
+        member.first_name = member.first_name.replaceAll("'", "");
+        member.last_name = member.last_name.replaceAll("'", "");
+      });
+
+      await saveMembers(groupId, membersBunch.response.items);
+
+      currentOffset += membersBunch.response.items.length;
+      console.log(`Загружено: ${currentOffset} / ${totalCount}`);
+    } catch (e) {
+      console.log(
+        `Неизвестная ошибка, для продолжения загрузки пропишите коману: node get-users ${groupId} ${currentOffset}`
+      );
+      return;
     }
-
-    membersBunch.response.items.forEach((member) => {
-      member.first_name = member.first_name.replaceAll("'", "");
-      member.last_name = member.last_name.replaceAll("'", "");
-    });
-
-    await saveMembers(groupId, membersBunch.response.items);
-
-    currentOffset += membersBunch.response.items.length;
-    console.log(`Загружено: ${currentOffset} / ${totalCount}`);
   }
 
   console.log("Готово");
